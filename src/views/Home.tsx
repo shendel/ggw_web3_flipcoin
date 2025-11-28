@@ -13,6 +13,7 @@ import LoadingPlaceholder from '@/components/LoadingPlaceholder'
 import UserPanel from '@/components/flipgame/UserPanel'
 import Coin from '@/components/flipgame/Coin'
 import GameStart from '@/components/flipgame/GameStart'
+import BottomSeoBlock from '@/components/flipgame/BottomSeoBlock'
 
 export default function Home(props) {
   const {
@@ -90,6 +91,8 @@ export default function Home(props) {
       <div className="min-h-screen flex items-center justify-center p-4">
         <GameStart balance={100} onFlip={() => {}} />
       </div>
+      
+      <BottomSeoBlock />
 {/*
       {(bottomBlockLoading || bottomBlockContent !== false) && (
         <div className="w-full pt-2">

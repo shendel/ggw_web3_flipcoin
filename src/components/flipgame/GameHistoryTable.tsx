@@ -2,6 +2,8 @@ import { useState } from 'react';
 import SmallFlipCoin from './SmallFlipCoin'
 import { fromWei, toWei } from '@/helpers/wei'
 import BigNumber from "bignumber.js"
+import GameInfoModal from './GameInfoModal'
+import { useConfirmationModal } from '@/components/ConfirmationModal'
 
 import { GAME_STATUS } from '@/helpers_flipgame/constants'
 const ITEMS_PER_PAGE = 5;
@@ -12,6 +14,8 @@ const GameHistoryTable = (props) => {
     tokenDecimals,
     winMultiplier
   } = props
+  
+  const { openModal } = useConfirmationModal()
   
   const [currentPage, setCurrentPage] = useState(1);
 
@@ -29,6 +33,18 @@ const GameHistoryTable = (props) => {
     if (currentPage < totalPages) setCurrentPage(currentPage + 1);
   };
 
+  const handleOpenGameInfo = (gameInfo) => {
+    openModal({
+      title: `Game Info`,
+      hideBottomButtons: true,
+      fullWidth: true,
+      id: 'GAME_INFO',
+      content: (
+        <GameInfoModal gameInfo={gameInfo} />
+      )
+    })
+  }
+  
   return (
     <div className="overflow-hidden rounded-lg shadow-md bg-gray-800 text-white">
       <table className="min-w-full table-auto">
@@ -50,7 +66,7 @@ const GameHistoryTable = (props) => {
           )}
 
           {paginatedGames.map((game, index) => (
-            <tr key={index} className="hover:bg-gray-700 transition-colors">
+            <tr key={index} className="hover:bg-gray-700 transition-colors cursor-pointer" onClick={() => { handleOpenGameInfo(game) }}>
               <td className="px-4 py-3 text-sm">
                 <span className="flex items-center">
                   {game.chosenSide === true ? (

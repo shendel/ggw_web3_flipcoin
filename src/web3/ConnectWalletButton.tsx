@@ -65,7 +65,7 @@ export const ConnectWalletButton: React.FC = (props) => {
               return wrongChainView(openChainModal)
             }
 
-            return connectedView(account.address, account.ensName)
+            return connectedView(account.address, account.ensName, openAccountModal)
           })()}
         </div>
       )}

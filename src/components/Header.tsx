@@ -25,6 +25,7 @@ const Header = () => {
     balance
   } = useInjectedWeb3()
   
+  /*
   useEffect(() => {
     const handleScroll = () => {
       if (window.scrollY > 50) {
@@ -37,27 +38,62 @@ const Header = () => {
     window.addEventListener('scroll', handleScroll);
     return () => window.removeEventListener('scroll', handleScroll);
   }, []);
-  
+  */
   const chainInfo = GET_CHAIN_BYID(MAINNET_CHAIN_ID)
-  console.log('>>> chainInfo', chainInfo)
   
   const isOwner = false
 
-  const menuItems = [
+  const menuItems = window.SO_FLIPCOIN_MENU || [
     {
       title: 'Home',
-      url: '#/'
-    },
+      url: '/'
+    },/*
+    {
+      title: 'With sub menu',
+      url: '',
+      childs: [
+        {
+          title: 'Item 1',
+          url: '#'
+        },
+        {
+          title: 'Item 2',
+          url: '#'
+        }
+      ]
+    },*/
     /*
     {
       title: 'About',
       url: '#/about'
     },
     */
+    /*
     ...((isOwner) ? [{
       title: 'Admin',
       url: '#/admin'
     }] : [])
+    */
+    /*
+    {
+      title: 'Games', url: '', childs: [
+        { title: 'Pick 2 Mini', url: '' },
+        { title: 'Pick 2', url: '' },
+        { title: 'Pick 6', url: '' },
+        { title: 'FlipCoin', url: '' },
+      ]
+    },
+    { title: 'Provably fair', url: '' },
+    { title: 'Roadmap', url: '' },
+    { title: 'Stake &amp; Earn', url: '' },
+    { title: 'Token', url: '' },
+    { title: 'Cooperation', url: '' },
+    { title: 'About', url: '', childs: [
+        { title: 'Achievements', url: '' },
+        { title: 'History', url: '' }
+      ]
+    }
+    */
   ]
   
   const toggleMenu = () => {
@@ -68,7 +104,149 @@ const Header = () => {
     setIsMenuOpen(false); // Закрываем меню после отключения
   };
   
+  useEffect(() => {
+    if (isMenuOpen) {
+      document.body.style.overflowY = 'hidden'
+    } else {
+      document.body.style.overflowY = 'auto'
+    }
+  }, [ isMenuOpen ])
   const walletButtonClass = `flex items-center gap-2 px-4 py-2 rounded bg-indigo-600 hover:bg-indigo-700 text-white font-semibold rounded-lg disabled:bg-gray-600 disabled:cursor-not-allowed transition duration-200 flex items-center justify-center space-x-2`
+  
+  const renderMenuItems = () => {
+    return (
+      <ul>
+        {menuItems.map((item, key) => {
+          const { title, url, childs } = item
+          return (
+            <li key={key} className={(childs && childs.length && childs.length > 0) ? 'menu-item-has-children' : ''}>
+              <a href={url}>
+                <span className="text-white">{title}</span>
+              </a>
+              {(childs && childs.length && childs.length > 0) && (
+                <ul>
+                  {childs.map((subItem, subKey) => {
+                    const { title, url } = subItem
+                    return (
+                      <li key={subKey}>
+                        <a href={url}>
+                          <span className="text-white">{title}</span>
+                        </a>
+                      </li>
+                    )
+                  })}
+                </ul>
+              )}
+            </li>
+          )
+        })}
+      </ul>
+    )
+  }
+  
+  return (
+    <header className="p-4 flex items-center mainHeader">
+      <div className="logo">
+        <strong><a href="/">GG World</a></strong>
+      </div>
+      <div className={`ggw_mobile_menu ${(isMenuOpen) ? '-opened' : ''}`} id="ggw_mobile_menu">
+        <div className="ggw_mobile_menu_overlay" onClick={() => { setIsMenuOpen(false) }}></div>
+        <div className="ggw_mobile_menu_holder">
+          <div className="ggw_mobile_menu_button_holder">
+            <div className="connectWalletMobileHolder">
+              <ConnectWalletButton
+                connectView={(isConnecting, openConnectModal) => {
+                  return (
+                    <button
+                      disabled={isConnecting}
+                      onClick={openConnectModal}
+                      className="connectWalletButton"
+                    >
+                      Connect
+                    </button>
+                  )
+                }}
+                connectedView={(walletAddress, nms, openModal) => {
+                  return (
+                    <button
+                      className="connectWalletButton"
+                      onClick={openModal}
+                    >
+                      <span>{`${walletAddress.slice(0, 6)}...${walletAddress.slice(-4)}`}</span>
+                    </button>
+                  )
+                }}
+                wrongChainView={(openChainModal) => {
+                  return (
+                    <button
+                      onClick={openChainModal}
+                      className="connectWalletButton"
+                    >
+                      Switch chain
+                    </button>
+                  )
+                }}
+              />
+            </div>
+            <label className="hamburger" onClick={toggleMenu}>
+              <div className="lines">
+                <span className="line"></span>
+                <span className="line"></span>
+                <span className="line"></span>
+              </div>
+            </label>
+          </div>
+          <nav className="menu ggw_main_menu_mobile">
+            {/* -------------------------- */}
+            {renderMenuItems()}
+            {/* ========================== */}
+          </nav>
+        </div>
+      </div>
+      
+      <div className="ggw_main_menu_holder">
+        <nav className="menu ggw_main_menu flex space-x-4">
+          {renderMenuItems()}
+        </nav>
+        <div>
+          <ConnectWalletButton
+            connectView={(isConnecting, openConnectModal) => {
+              return (
+                <button
+                  disabled={isConnecting}
+                  onClick={openConnectModal}
+                  className="connectWalletButton"
+                >
+                  Connect
+                </button>
+              )
+            }}
+            connectedView={(walletAddress, nms, openModal) => {
+              return (
+                <button
+                  className="connectWalletButton"
+                  onClick={openModal}
+                >
+                  <span>{`${walletAddress.slice(0, 6)}...${walletAddress.slice(-4)}`}</span>
+                </button>
+              )
+            }}
+            wrongChainView={(openChainModal) => {
+              return (
+                <button
+                  onClick={openChainModal}
+                  className="connectWalletButton"
+                >
+                  Switch chain
+                </button>
+              )
+            }}
+          />
+        </div>
+      </div>
+    </header>
+  )
+  
   return (
     <header
       className={`main-header shadow-md fixed top-0 left-0 right-0 z-50 ${scrolled ? 'scrolled' : ''}`}
@@ -135,10 +313,10 @@ const Header = () => {
                   </button>
                 )
               }}
-              connectedView={(walletAddress) => {
+              connectedView={(walletAddress, ensName, openAccountModal) => {
                 return (
                   <button
-                    onClick={toggleMenu}
+                    onClick={openAccountModal}
                     className={walletButtonClass}
                   >
                     <span>{`${walletAddress.slice(0, 6)}...${walletAddress.slice(-4)}`}</span>
@@ -279,10 +457,11 @@ const Header = () => {
                   </Button>
                 )
               }}
-              connectedView={(walletAddress) => {
+              connectedView={(walletAddress, ensName, openAccountModal) => {
                 return (
                   <Button
                     fullWidth={true}
+                    onClick={openAccountModal}
                   >
                     {`${walletAddress.slice(0, 8)}...${walletAddress.slice(-6)}`}
                   </Button>

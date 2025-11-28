@@ -12,12 +12,15 @@ const nextConfig = {
   },
   publicRuntimeConfig: {
     NODE_ENV: process.env.NODE_ENV,
-    CHAIN_ID: 56, // 97,
-    GAME_CONTRACT: "0x801B2B8b7B86147C88aA346378e626E5481b5e9d", // "0x5eeb7cee07a7aB072Fbf70f1FEc8793C276f2CB1",
-    TITLE: "GGWorld Flip Game",
+    CHAIN_ID: 97,
+    BACKEND: "http://127.0.0.1:3100", //https://ws.gg.world/random",
+    GAME_CONTRACT: "0xE58E1675514D33b7BB8DB311CFef55107BE71774",
+    DEPOSIT_CONTRACT: "0x0CE4B81b7693e444174AF6769dE7681bF5E2B82e",
+    TITLE: "Flip A Coin: Heads or Tails? FlipCoin Game - Coin Toss",
+    SEO_DESC: "Flip A Coin! – a simple, fast, and provably fair FlipCoin game. Toss the coin, choose heads or tails, and win! Enjoy great fun with a virtual coin flip!",
     RANDOM_GENERATOR: "0xa2d8526d12fa0a41007d2b5f33da81d0d6716fa9", // "0x33D44b8715349b26B5E16066647a9294F724a65c",
     TOKEN_ADDRESS: "0x1f832e8508bD9E95B4F65d252EAc40E70Cfd7A2A",
-    NEXT_PUBLIC_PROJECT_ID: "a23677c4af3139b4eccb52981f76ad94"
+    NEXT_PUBLIC_PROJECT_ID: "b87a3c44755d7f346d350330ca573223"
   }
 }
 

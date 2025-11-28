@@ -3,7 +3,8 @@ import { useInjectedWeb3 } from '@/web3/InjectedWeb3Provider'
 import fetchPlayerInfo from '@/helpers_flipgame/fetchPlayerInfo'
 import {
   MAINNET_CHAIN_ID,
-  GAME_CONTRACT
+  GAME_CONTRACT,
+  DEPOSIT_CONTRACT
 } from '@/config'
 
 const UserPanel = (props) => {

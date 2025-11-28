@@ -11,6 +11,7 @@ const callContractMethod = (options) => {
       args,
       weiAmount,
       calcGas,
+      ownGas,
     } = options
     const onTrx = options.onTrx || (() => {})
     const onSuccess = options.onSuccess || (() => {})
@@ -27,14 +28,16 @@ console.log('>>> callContractMethod', activeWeb3, contract, method, args)
           args || [],
           weiAmount
         )
+        sendArgs.gas = ownGas || sendArgs.gas
         const gasPrice = await activeWeb3.eth.getGasPrice()
+        console.log('[Gasprice]', gasPrice, sendArgs)
         if (calcGas) {
           resolve({
             gas: new BigNumber(sendArgs.gas).multipliedBy(gasPrice).toFixed()
           })
           return
         }
-        sendArgs.gasPrice = gasPrice
+        sendArgs.gasPrice = gasPrice //200000000 //gasPrice
 
         let txHash
         contract.methods[method](...(args || []))

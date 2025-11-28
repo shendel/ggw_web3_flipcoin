@@ -1,4 +1,4 @@
-import FlipGameJson from "@/abi/FlipCoinGame.json"
+import FlipGameJson from "@/abi/GGWDeposit.json"
 import callContractMethod from '@/helpers/callContractMethod'
 
 const withdrawTokens = (options) => {

@@ -10,7 +10,8 @@ import AppRootWrapper from '@/components/AppRootWrapper'
 import MyFlipGame from '@/views/'
 
 import {
-  TITLE
+  TITLE,
+  SEO_DESC
 } from '@/config'
 function MyApp(pageProps) {
 
@@ -19,6 +20,7 @@ function MyApp(pageProps) {
     <>
       <Head>
         <title>{TITLE}</title>
+        <meta name="description" content={SEO_DESC} />
       </Head>
       <AppRootWrapper>
         <MyFlipGame />

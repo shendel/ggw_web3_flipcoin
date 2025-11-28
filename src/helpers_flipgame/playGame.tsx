@@ -7,6 +7,7 @@ const playGame = (options) => {
     address,
     betAmount,
     chosenSide,
+    serverHash,
     calcGas,
     onTrx = (txHash) => {},
     onSuccess = () => {},
@@ -20,9 +21,11 @@ const playGame = (options) => {
     activeWeb3,
     contract,
     method: 'play',
+    ownGas: 1000_000,
     args: [
       betAmount,
-      chosenSide
+      chosenSide,
+      serverHash,
     ],
     calcGas,
     onTrx,

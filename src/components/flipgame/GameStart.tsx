@@ -4,6 +4,7 @@ import DepositModal from './DepositModal'
 import WithdrawModal from './WithdrawModal'
 import WinningStars from './WinningStars'
 import GameHistoryTable from './GameHistoryTable'
+import CheckProvablyFairModal from './CheckProvablyFairModal'
 
 import ConnectWalletButton from '@/components/ConnectWalletButton'
 
@@ -18,6 +19,7 @@ import withdrawTokens from '@/helpers_flipgame/withdrawTokens'
 import fetchGameInfo from '@/helpers_flipgame/fetchGameInfo'
 import fetchPlayerGames from '@/helpers_flipgame/fetchPlayerGames'
 import fetchSummaryGameInfo from '@/helpers_flipgame/fetchSummaryGameInfo'
+import LoginButton from './LoginButton'
 
 import playGame from '@/helpers_flipgame/playGame'
 import BigNumber from "bignumber.js"
@@ -25,7 +27,9 @@ import { GAME_STATUS } from '@/helpers_flipgame/constants'
 console.log('>> GAME_STATUS', GAME_STATUS)
 import {
   MAINNET_CHAIN_ID,
-  GAME_CONTRACT
+  GAME_CONTRACT,
+  DEPOSIT_CONTRACT,
+  BACKEND
 } from '@/config'
 
 import { fromWei, toWei } from '@/helpers/wei'
@@ -52,6 +56,10 @@ const GameStart: React.FC<GameStartProps> = (props) => {
   const [ totalGameInfo, setTotalGameInfo ] = useState(false)
   const [ gameBank, setGameBank ] = useState('0')
   
+  const [ serverHash, setServerHash ] = useState(``)
+  
+
+  
   useEffect(() => {
     fetchSummaryGameInfo({
       chainId: MAINNET_CHAIN_ID,
@@ -72,6 +80,47 @@ const GameStart: React.FC<GameStartProps> = (props) => {
     isSwitchingNetwork,
   } = useInjectedWeb3()
 
+  const [ needUpdateServerHash, setNeedUpdateServerHash ] = useState(true)
+  const [ isServerHashFetching, setIsServerHashFetching ] = useState(true)
+  const [ isServerHashFetched, setIsServerHashFetched ] = useState(false)
+  
+  
+  const [ isLoggedIn, setIsLoggedIn ] = useState(false)
+  const [ loginInfo, setLoginInfo ] = useState(false)
+  const handleOnLogin = (loginInfo) => {
+    const { hash } = loginInfo
+    setLoginInfo(loginInfo)
+    setServerHash(hash)
+    setIsServerHashFetched(true)
+    setIsLoggedIn(true)
+  }
+  const [ lastGameRandom, setLastGameRandom ] = useState(``)
+  useEffect(() => {
+    if (injectedAccount && needUpdateServerHash) {
+      setIsServerHashFetching(true)
+      setIsServerHashFetched(false)
+      console.log('Fetch hash', injectedAccount)
+      setNeedUpdateServerHash(false)
+      fetch(BACKEND + '/gethash', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ address: injectedAccount })
+      }).then(async (answer) => {
+        const res = await answer.json()
+        if (res && res.answer && res.hash) {
+          setServerHash(res.hash)
+          setIsServerHashFetching(false)
+          setIsServerHashFetched(true)
+        }
+      }).catch((err) => {
+        console.log('ERROR', err)
+        setIsServerHashFetching(false)
+      })
+    }
+  }, [ injectedAccount, needUpdateServerHash ])
+  
   const { addNotification } = useNotification()
   const {
     openModal,
@@ -110,10 +159,13 @@ const GameStart: React.FC<GameStartProps> = (props) => {
         })
       } else {
         console.log('>>> Flipped!!')
+        console.log(gameInfo)
         clearInterval(poll)
         if (gameId && gameIsFinished && !gameIsRunning && gameInfo) {
           setIsFlipping(false)
           setNeedUpdateUser(true)
+          setIsGameReseted(false)
+          setLastGameRandom(gameInfo.random)
           const _playerGames = [...playerGames]
           _playerGames[0] = gameInfo
           setPlayerGames(_playerGames)
@@ -168,7 +220,6 @@ const GameStart: React.FC<GameStartProps> = (props) => {
         address: GAME_CONTRACT,
         chainId: MAINNET_CHAIN_ID
       }).then((answer) => {
-        console.log(answer)
         const {
           playerDeposit: {
             balance
@@ -237,7 +288,7 @@ const GameStart: React.FC<GameStartProps> = (props) => {
       activeWallet: injectedAccount,
       activeWeb3: injectedWeb3,
       tokenAddress: tokenAddress,
-      approveFor: GAME_CONTRACT,
+      approveFor: DEPOSIT_CONTRACT,
       weiAmount: toWei(amount, tokenDecimals),
       onTrx: (txHash) => {
         addNotification('info', 'Approving transaction', getTransactionLink(MAINNET_CHAIN_ID, txHash), getShortTxHash(txHash))
@@ -260,7 +311,7 @@ const GameStart: React.FC<GameStartProps> = (props) => {
     addNotification('info', 'Depositing. Confirm transaction')
     depositTokens({
       activeWeb3: injectedWeb3,
-      address: GAME_CONTRACT,
+      address: DEPOSIT_CONTRACT,
       amount: `0x` + new BigNumber(toWei(amount, tokenDecimals)).toString(16),
       onTrx: (txHash) => {
         addNotification('info', 'Deposit transaction', getTransactionLink(MAINNET_CHAIN_ID, txHash), getShortTxHash(txHash))
@@ -283,7 +334,7 @@ const GameStart: React.FC<GameStartProps> = (props) => {
     addNotification('info', 'Withdrawing deposit. Confirm transaction')
     withdrawTokens({
       activeWeb3: injectedWeb3,
-      address: GAME_CONTRACT,
+      address: DEPOSIT_CONTRACT,
       amount: `0x` + new BigNumber(toWei(amount, tokenDecimals)).toString(16),
       onTrx: (txHash) => {
         addNotification('info', 'Withdraw transaction', getTransactionLink(MAINNET_CHAIN_ID, txHash), getShortTxHash(txHash))
@@ -301,6 +352,13 @@ const GameStart: React.FC<GameStartProps> = (props) => {
     }).catch((err) => {})
   }
   
+  const [ isGameReseted, setIsGameReseted ] = useState(true)
+  const handleResetGame = () => {
+    setServerHash(false)
+    setNeedUpdateServerHash(true)
+    setIsGameReseted(true)
+    setLastGameRandom(false)
+  }
   const handlePlayGame = () => {
     addNotification('info', 'Starting game round. Confirm transaction')
     setIsStaringGame(true)
@@ -310,6 +368,7 @@ const GameStart: React.FC<GameStartProps> = (props) => {
       address: GAME_CONTRACT,
       betAmount: `0x` + new BigNumber(toWei(bet, tokenDecimals)).toString(16),
       chosenSide,
+      serverHash,
       onTrx: (txHash) => {
         addNotification('info', 'Start game round transaction', getTransactionLink(MAINNET_CHAIN_ID, txHash), getShortTxHash(txHash))
         setIsFlipping(true)
@@ -349,6 +408,15 @@ const GameStart: React.FC<GameStartProps> = (props) => {
     })
   }
   
+  const openCheckProvablyFair = () => {
+    openModal({
+      title: `Check Provably Fair`,
+      hideBottomButtons: true,
+      fullWidth: true,
+      id: 'CHECK_PROVABLY',
+      content: ( <CheckProvablyFairModal /> )
+    })
+  }
   const onDeposit = () => {
     openModal({
       title: `Deposit replenishment`,
@@ -586,34 +654,67 @@ const GameStart: React.FC<GameStartProps> = (props) => {
               {isWrongChain ? (
                 <SwitchChainButton />
               ) : (
-                <button
-                  onClick={handlePlayGame}
-                  disabled={!betIsOk || chosenSide === null || isFlipping || isStartingGame}
-                  className="w-full py-3 bg-indigo-600 hover:bg-indigo-700 text-white font-semibold rounded-lg disabled:bg-gray-600 disabled:cursor-not-allowed transition duration-200 flex items-center justify-center space-x-2"
-                >
-                  {isFlipping || isStartingGame ? (
+                <>
+                  {isLoggedIn ? (
                     <>
-                      <svg className="animate-spin h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                        <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                        <path
-                          className="opacity-75"
-                          fill="currentColor"
-                          d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
-                        ></path>
-                      </svg>
-                      <span>{(isStartingGame) ? `Starting game round` : `Waiting for the result...`}</span>
+                      {(isGameReseted && isServerHashFetched) ? (
+                        <button
+                          onClick={handlePlayGame}
+                          disabled={!betIsOk || chosenSide === null || isFlipping || isStartingGame}
+                          className="w-full py-3 bg-indigo-600 hover:bg-indigo-700 text-white font-semibold rounded-lg disabled:bg-gray-600 disabled:cursor-not-allowed transition duration-200 flex items-center justify-center space-x-2"
+                        >
+                          {isFlipping || isStartingGame ? (
+                            <>
+                              <svg className="animate-spin h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                                <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                                <path
+                                  className="opacity-75"
+                                  fill="currentColor"
+                                  d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+                                ></path>
+                              </svg>
+                              <span>{(isStartingGame) ? `Starting game round` : `Waiting for the result...`}</span>
+                            </>
+                          ) : (
+                            <span>
+                              {!betIsOk
+                                ? badBetLabel
+                                : chosenSide === null
+                                  ? `Choose your side of the coin`
+                                  : `Flip Coin`
+                              }
+                            </span>
+                          )}
+                        </button>
+                      ) : (
+                        <>
+                          <button
+                            onClick={handleResetGame}
+                            disabled={isServerHashFetching}
+                            className="w-full py-3 bg-indigo-600 hover:bg-indigo-700 text-white font-semibold rounded-lg disabled:bg-gray-600 disabled:cursor-not-allowed transition duration-200 flex items-center justify-center space-x-2"
+                          >
+                            {isServerHashFetching
+                              ? `Fetching random hash`
+                              : `Reset Game and try again`
+                            }
+                          </button>
+                        </>
+                      )}
+                      <div>
+                        <span>Generated Random:</span>
+                        <input type="text"
+                          value={lastGameRandom ? lastGameRandom : `hidden, will be aviable after flip`} readOnly={true}
+                          className="w-full px-4 py-2 bg-gray-800 border border-gray-600 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:outline-none text-white placeholder-gray-500" />
+                      </div>
+                      <div>
+                        <span>Hash from generated random:</span>
+                        <input type="text" value={serverHash || `fetching... please wait`} readOnly={true} className="w-full px-4 py-2 bg-gray-800 border border-gray-600 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:outline-none text-white placeholder-gray-500" />
+                      </div>
                     </>
                   ) : (
-                    <span>
-                      {!betIsOk
-                        ? badBetLabel
-                        : chosenSide === null
-                          ? `Choose your side of the coin`
-                          : `Flip Coin`
-                      }
-                    </span>
+                    <LoginButton onLogin={handleOnLogin} />
                   )}
-                </button>
+                </>
               )}
             </>
           )}
@@ -624,6 +725,14 @@ const GameStart: React.FC<GameStartProps> = (props) => {
             <GameHistoryTable games={playerGames} tokenDecimals={tokenDecimals} winMultiplier={totalGameInfo.winMultiplier} />
           </div>
         )}
+        <div className="bg-gray-900 rounded-xl shadow-lg mt-6 p-6 max-w-lg w-full mx-auto border border-gray-700">
+          <button
+            onClick={openCheckProvablyFair}
+            className="w-full py-3 bg-indigo-600 hover:bg-indigo-700 text-white font-semibold rounded-lg disabled:bg-gray-600 disabled:cursor-not-allowed transition duration-200 flex items-center justify-center space-x-2"
+          >
+            Check Provably Fair
+          </button>
+        </div>
       </div>
     </>
   );

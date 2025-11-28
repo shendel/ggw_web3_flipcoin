@@ -39,15 +39,21 @@ const fetchPlayerInfo = (options) => {
         },
         gameBank: {
           func: 'gameBank'
-        }
+        },
+        playerBalance: {
+          func: 'getDepositOf', args: [ playerAddress ]
+        },
       }
     }).then((mcAnswer) => {
-      console.log('>>> fetchPlayerInfo', mcAnswer)
+    console.log('>>> fetchPlayerInfo', mcAnswer)
+      const { playerDeposit, playerBalance } = mcAnswer
+      playerDeposit.balance = playerBalance
       resolve({
         chainId,
         address,
         playerAddress,
         ...mcAnswer,
+        playerDeposit
       })
 
     }).catch((err) => {
