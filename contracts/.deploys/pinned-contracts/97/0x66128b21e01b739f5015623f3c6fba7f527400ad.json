@@ -1,6 +1,6 @@
 {
   "name": "FlipCoinGame",
-  "address": "0xc88475bf6c7c8c887c4043fbab42378bf86027ce",
+  "address": "0x66128b21e01b739f5015623f3c6fba7f527400ad",
   "abi": [
     {
       "inputs": [
@@ -73,6 +73,37 @@
       "type": "event"
     },
     {
+      "anonymous": false,
+      "inputs": [
+        {
+          "indexed": true,
+          "internalType": "address",
+          "name": "player",
+          "type": "address"
+        },
+        {
+          "indexed": false,
+          "internalType": "uint256",
+          "name": "betAmount",
+          "type": "uint256"
+        },
+        {
+          "indexed": false,
+          "internalType": "bytes32",
+          "name": "hash",
+          "type": "bytes32"
+        },
+        {
+          "indexed": false,
+          "internalType": "bytes32",
+          "name": "random",
+          "type": "bytes32"
+        }
+      ],
+      "name": "GameReverted",
+      "type": "event"
+    },
+    {
       "inputs": [
         {
           "internalType": "address",
@@ -101,6 +132,39 @@
         }
       ],
       "name": "play",
+      "outputs": [],
+      "stateMutability": "nonpayable",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "address[]",
+          "name": "playerAddress",
+          "type": "address[]"
+        },
+        {
+          "internalType": "uint256[]",
+          "name": "betAmount",
+          "type": "uint256[]"
+        },
+        {
+          "internalType": "bool[]",
+          "name": "chosenSide",
+          "type": "bool[]"
+        },
+        {
+          "internalType": "bytes32[]",
+          "name": "hash",
+          "type": "bytes32[]"
+        },
+        {
+          "internalType": "bytes32[]",
+          "name": "random",
+          "type": "bytes32[]"
+        }
+      ],
+      "name": "playBatch",
       "outputs": [],
       "stateMutability": "nonpayable",
       "type": "function"
@@ -487,6 +551,72 @@
           "internalType": "enum FlipCoinGame.GameStatus",
           "name": "",
           "type": "uint8"
+        }
+      ],
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "address",
+          "name": "playerAddress",
+          "type": "address"
+        }
+      ],
+      "name": "getLastPlayerGame",
+      "outputs": [
+        {
+          "components": [
+            {
+              "internalType": "uint256",
+              "name": "gameId",
+              "type": "uint256"
+            },
+            {
+              "internalType": "address",
+              "name": "player",
+              "type": "address"
+            },
+            {
+              "internalType": "uint256",
+              "name": "amount",
+              "type": "uint256"
+            },
+            {
+              "internalType": "uint256",
+              "name": "wonAmount",
+              "type": "uint256"
+            },
+            {
+              "internalType": "bytes32",
+              "name": "hash",
+              "type": "bytes32"
+            },
+            {
+              "internalType": "bytes32",
+              "name": "random",
+              "type": "bytes32"
+            },
+            {
+              "internalType": "bool",
+              "name": "chosenSide",
+              "type": "bool"
+            },
+            {
+              "internalType": "uint256",
+              "name": "timestamp",
+              "type": "uint256"
+            },
+            {
+              "internalType": "enum FlipCoinGame.GameStatus",
+              "name": "status",
+              "type": "uint8"
+            }
+          ],
+          "internalType": "struct FlipCoinGame.Game",
+          "name": "ret",
+          "type": "tuple"
         }
       ],
       "stateMutability": "view",
@@ -999,5 +1129,5 @@
     }
   ],
   "filePath": "electron/FlipCoinGamePFS.sol",
-  "pinnedAt": 1764334714385
+  "pinnedAt": 1764422874523
 }

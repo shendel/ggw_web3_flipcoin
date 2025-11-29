@@ -158,87 +158,120 @@ contract FlipCoinGame is ReentrancyGuard {
         bool won,
         uint256 reward
     );
+    event GameReverted(
+        address indexed player,
+        uint256 betAmount,
+        bytes32 hash,
+        bytes32 random
+    );
 
-    function play(address playerAddress, uint256 betAmount, bool chosenSide, bytes32 hash, bytes32 random) external nonReentrant {
+    function playBatch(
+        address[] memory playerAddress,
+        uint256[] memory betAmount,
+        bool[] memory chosenSide,
+        bytes32[] memory hash,
+        bytes32[] memory random
+    ) external nonReentrant {
         require(msg.sender == oracle, "Only oracle");
-        require(keccak256(abi.encodePacked(random)) == hash, "Invalid random for this hash");
-        require(betAmount >= minBet, "Bet to low");
-        require(betAmount <= maxBet, "Bet to hight");
-        
-        uint256 winAmount = (betAmount * winMultiplier) / PRECISION;
-        require(gameBank() > winAmount, "No coins in bank");
-
-        PlayerAccount storage player = players[playerAddress];
-        uint256 playerBalance = depositManager.getUserDeposit(playerAddress);
-        require(playerBalance >= betAmount, "Not enough deposit");
-        require(player.blocked == false, "Not allowed for you");
-        
-        
-
-        if (player.playerAddress != playerAddress) {
-            player.playerAddress = playerAddress;
-            playersAddresses[playersCount] = playerAddress;
-            playersCount++;
-        }
-        
-
-        player.totalBets = player.totalBets + betAmount;
-        player.lastGame = block.timestamp;
-
-
-        bool result = uint256(keccak256(abi.encodePacked(
-            random
-        ))) % 2 == 0;
-        bool won = (chosenSide == result);
-
-        if (won) {
-            player.totalWon = player.totalWon + winAmount;
-            player.wonGames++;
-
-            totalWonAmount = totalWonAmount + winAmount;
-            wonGamesCount++;
-
-            depositManager.gameDepositUserDeposit(player.playerAddress, winAmount - betAmount);
-
-            games[gamesCount] = Game({
-                gameId: gamesCount,
-                player: playerAddress,
-                hash: hash,
-                random: random,
-                amount: betAmount,
-                wonAmount: winAmount,
-                chosenSide: chosenSide,
-                timestamp: block.timestamp,
-                status: GameStatus.Won
-            });
-            playerGames[playerAddress].push(gamesCount);
-
-            emit GameResult(playerAddress, gamesCount, betAmount, hash, random, true, winAmount);
-        } else {
-            player.totalLost = player.totalLost + betAmount;
-            player.lostGames++;
-            totalLostAmount = totalLostAmount + betAmount;
-            lostGamesCount++;
-
-            depositManager.gameWithdrawUserDeposit(playerAddress, betAmount);
-            depositManager.gameBurnAndStake(betAmount);
-            
-            games[gamesCount] = Game({
-                gameId: gamesCount,
-                player: playerAddress,
-                hash: hash,
-                random: random,
-                amount: betAmount,
-                wonAmount: 0,
-                chosenSide: chosenSide,
-                timestamp: block.timestamp,
-                status: GameStatus.Lost
-            });
-            playerGames[playerAddress].push(gamesCount);
-            emit GameResult(playerAddress, gamesCount, betAmount, hash, random, false, 0);
+        require(
+            playerAddress.length == betAmount.length
+            && playerAddress.length == chosenSide.length
+            && playerAddress.length == hash.length
+            && playerAddress.length == random.length, "Bad input"
+        );
+        for (uint256 i = 0;i < playerAddress.length; i++) {
+            __play(playerAddress[i], betAmount[i], chosenSide[i], hash[i], random[i]);
         }
     }
 
+    function play(
+        address playerAddress,
+        uint256 betAmount,
+        bool chosenSide,
+        bytes32 hash,
+        bytes32 random
+    ) external nonReentrant {
+        require(msg.sender == oracle, "Only oracle");
+        __play(playerAddress,betAmount, chosenSide, hash, random);
+    }
+
+    function __play(
+        address playerAddress,
+        uint256 betAmount,
+        bool chosenSide,
+        bytes32 hash,
+        bytes32 random
+    ) internal {
+        if (betAmount >= minBet && betAmount <= maxBet) {
+            PlayerAccount storage player = players[playerAddress];
+            uint256 playerBalance = depositManager.getUserDeposit(playerAddress);
+            if (!player.blocked && playerBalance >= betAmount) {
+                uint256 winAmount = (betAmount * winMultiplier) / PRECISION;
+
+                if (player.playerAddress == address(0)) {
+                    player.playerAddress = playerAddress;
+                    playersAddresses[playersCount++] = playerAddress;
+                }
+
+                player.totalBets += betAmount;
+                player.lastGame = block.timestamp;
+
+                bool result = (uint256(random) & 1) == 0;
+                bool won = (chosenSide == result);
+
+                uint256 gameId = ++gamesCount;
+
+                if (won) {
+                    player.totalWon += winAmount;
+                    player.wonGames++;
+                    totalWonAmount += winAmount;
+                    wonGamesCount++;
+
+                    depositManager.gameDepositUserDeposit(playerAddress, winAmount - betAmount);
+                } else {
+                    player.totalLost += betAmount;
+                    player.lostGames++;
+                    totalLostAmount += betAmount;
+                    lostGamesCount++;
+
+                    depositManager.gameWithdrawUserDeposit(playerAddress, betAmount);
+                    depositManager.gameBurnAndStake(betAmount);
+                }
+
+                games[gameId] = Game({
+                    gameId: gameId,
+                    player: playerAddress,
+                    amount: betAmount,
+                    wonAmount: won ? winAmount : 0,
+                    chosenSide: chosenSide,
+                    hash: hash,
+                    random: random,
+                    timestamp: block.timestamp,
+                    status: won ? GameStatus.Won : GameStatus.Lost
+                });
+
+                playerGames[playerAddress].push(gameId);
+
+                emit GameResult(playerAddress, gameId, betAmount, hash, random, won, won ? winAmount : 0);
+                return;
+            }
+        }
+        emit GameReverted(
+            playerAddress,
+            betAmount,
+            hash,
+            random
+        );
+    }
+    function getLastPlayerGame(address playerAddress) public view returns (Game memory ret) {
+        if (playerGames[playerAddress].length > 0) {
+            return games[
+                playerGames[playerAddress][
+                    playerGames[playerAddress].length - 1
+                ]
+            ];
+        }
+    }
     // ==== Управление ====
     function setWinMultiplier(uint256 newMultiplier) external onlyOwner {
         winMultiplier = newMultiplier;

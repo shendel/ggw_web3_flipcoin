@@ -19,6 +19,8 @@ import withdrawTokens from '@/helpers_flipgame/withdrawTokens'
 import fetchGameInfo from '@/helpers_flipgame/fetchGameInfo'
 import fetchPlayerGames from '@/helpers_flipgame/fetchPlayerGames'
 import fetchSummaryGameInfo from '@/helpers_flipgame/fetchSummaryGameInfo'
+import fetchLastPlayerGame from '@/helpers_flipgame/fetchLastPlayerGame'
+
 import LoginButton from './LoginButton'
 
 import playGame from '@/helpers_flipgame/playGame'
@@ -138,50 +140,40 @@ const GameStart: React.FC<GameStartProps> = (props) => {
   
   useEffect(() => {
     const poll = setInterval(async () => {
-      if (gameId && gameIsRunning) {
-        // Game started - fetch status
-        fetchGameInfo({
+      if (gameIsRunning) {
+        fetchLastPlayerGame({
           address: GAME_CONTRACT,
           chainId: MAINNET_CHAIN_ID,
-          gameId
+          playerAddress: injectedAccount
         }).then((answer) => {
           const {
             gameInfo
           } = answer
-          if (gameInfo.status != GAME_STATUS.PENDING) {
+
+          if (gameInfo.status != GAME_STATUS.PENDING && gameInfo.gameId != lastGameInfo.gameId) {
             clearInterval(poll)
             setGameInfo(gameInfo)
+            setLastGameInfo(gameInfo)
             setGameIsFinished(true)
             setGameIsRunning(false)
+            setIsFlipping(false)
+            setNeedUpdateUser(true)
+            setIsGameReseted(false)
+            setLastGameRandom(gameInfo.random)
+            const _playerGames = [...playerGames]
+            _playerGames[0] = gameInfo
+            setPlayerGames(_playerGames)
+            clearInterval(poll)
           }
         }).catch((err) => {
-          console.log('>> err', err)
+          console.log('Fail fetch last game info in poll')
         })
-      } else {
-        console.log('>>> Flipped!!')
-        console.log(gameInfo)
-        clearInterval(poll)
-        if (gameId && gameIsFinished && !gameIsRunning && gameInfo) {
-          setIsFlipping(false)
-          setNeedUpdateUser(true)
-          setIsGameReseted(false)
-          setLastGameRandom(gameInfo.random)
-          const _playerGames = [...playerGames]
-          _playerGames[0] = gameInfo
-          setPlayerGames(_playerGames)
-          if (gameInfo.status == GAME_STATUS.WON) {
-            console.log('>>> WON!!!')
-          }
-          if (gameInfo.status == GAME_STATUS.LOST) {
-            console.log('>>> LOST!!!')
-          }
-        }
       }
     }, 1000);
 
     return () => clearInterval(poll);
     
-  }, [ gameId, gameIsFinished, gameIsRunning])
+  }, [ gameIsFinished, gameIsRunning])
 
   const [ playerGames, setPlayerGames ] = useState([])
   const [ needUpdateGamesList, setNeedUpdateGamesList ] = useState(true)
@@ -211,6 +203,8 @@ const GameStart: React.FC<GameStartProps> = (props) => {
     }
   }, [ isConnected, injectedAccount ])
   
+  const [ lastGameInfo, setLastGameInfo ] = useState(false)
+  
   useEffect(() => {
     if (isConnected && injectedAccount && needUpdateUser) {
       setIsFetchingUserInfo(true)
@@ -226,6 +220,7 @@ const GameStart: React.FC<GameStartProps> = (props) => {
           },
           tokenAddress,
           gameBank,
+          lastGameInfo,
           tokenInfo: {
             userAllowance,
             userBalance,
@@ -241,6 +236,7 @@ const GameStart: React.FC<GameStartProps> = (props) => {
         setTokenDecimals(decimals)
         setTokenSymbol(symbol)
         setGameBank(gameBank)
+        setLastGameInfo(lastGameInfo)
       }).catch((err) => {
         console.log('>err', err)
         setIsFetchingUserInfo(false)
@@ -358,6 +354,101 @@ const GameStart: React.FC<GameStartProps> = (props) => {
     setNeedUpdateServerHash(true)
     setIsGameReseted(true)
     setLastGameRandom(false)
+  }
+  const handlePlayGameServer = () => {
+    addNotification('info', 'Starting game round.')
+    //setIsStaringGame(true)
+    setGameInfo(false)
+    setIsFlipping(true)
+    setPlayerGames([
+      {
+        amount: toWei(bet, tokenDecimals),
+        chosenSide,
+        status: 0
+      },
+      ...playerGames
+    ])
+    fetch(BACKEND + '/play', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        address: injectedAccount,
+        seed: loginInfo.seed,
+        utx: loginInfo.utx,
+        signature: loginInfo.signature,
+        messageHash: loginInfo.messageHash,
+        betAmount: toWei(bet, tokenDecimals),
+        chosenSide,
+        hash: serverHash
+      })
+    }).then(async (answer) => {
+      const res = await answer.json()
+      const {
+        gameId,
+        hash,
+        random,
+        transactionHash,
+        won
+      } = res
+      console.log('on play', res)
+      addNotification('success', `Coin successfull flipping. Game ID ${gameId}`)
+      setIsStaringGame(false)
+      
+      setNeedUpdateUser(true)
+      console.log('>>> gameId', gameId)
+      setGameId(gameId)
+      setGameIsRunning(true)
+      setGameIsFinished(false)
+    }).catch((err) => {
+      console.log('fail play', err)
+    })
+    /*
+    playGame({
+      activeWeb3: injectedWeb3,
+      address: GAME_CONTRACT,
+      betAmount: `0x` + new BigNumber(toWei(bet, tokenDecimals)).toString(16),
+      chosenSide,
+      serverHash,
+      onTrx: (txHash) => {
+        addNotification('info', 'Start game round transaction', getTransactionLink(MAINNET_CHAIN_ID, txHash), getShortTxHash(txHash))
+        setIsFlipping(true)
+        setPlayerGames([
+          {
+            amount: toWei(bet, tokenDecimals),
+            chosenSide,
+            status: 0
+          },
+          ...playerGames
+        ])
+      },
+      onSuccess: (txInfo) => {
+        const {
+          events: {
+            GameRequested: {
+              returnValues: {
+                gameId
+              }
+            }
+          }
+        } = txInfo
+        addNotification('success', `Coin successfull flipping. Game ID ${gameId}`)
+        setIsStaringGame(false)
+        
+        setNeedUpdateUser(true)
+        console.log('>>> gameId', gameId)
+        setGameId(gameId)
+        setGameIsRunning(true)
+        setGameIsFinished(false)
+
+      },
+      onError: () => {}
+    }).catch((err) => {
+      addNotification('error', 'Fail depositing')
+      setIsStaringGame(false)
+    })
+    */
   }
   const handlePlayGame = () => {
     addNotification('info', 'Starting game round. Confirm transaction')
@@ -659,7 +750,7 @@ const GameStart: React.FC<GameStartProps> = (props) => {
                     <>
                       {(isGameReseted && isServerHashFetched) ? (
                         <button
-                          onClick={handlePlayGame}
+                          onClick={handlePlayGameServer}
                           disabled={!betIsOk || chosenSide === null || isFlipping || isStartingGame}
                           className="w-full py-3 bg-indigo-600 hover:bg-indigo-700 text-white font-semibold rounded-lg disabled:bg-gray-600 disabled:cursor-not-allowed transition duration-200 flex items-center justify-center space-x-2"
                         >

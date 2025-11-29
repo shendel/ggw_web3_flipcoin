@@ -104,6 +104,7 @@ interface IGGWDeposit {
         uint256 pendingBankAmount;
         uint256 burnPercent;        // pt 100 = 100%
         uint256 stakePercent;       // burnPercent+stakePercent = 100
+        uint256 gasPercent;
         string description;
     }
     function getUserDeposit(address userAddress) external view returns (uint256);
@@ -239,6 +240,7 @@ contract FlipCoinGame is ReentrancyGuard {
         bool won,
         uint256 reward
     );
+
     function play(address playerAddress, uint256 betAmount, bool chosenSide, bytes32 hash, bytes32 random) external nonReentrant {
         require(msg.sender == oracle, "Only oracle");
         require(keccak256(abi.encodePacked(random)) == hash, "Invalid random for this hash");
@@ -279,7 +281,7 @@ contract FlipCoinGame is ReentrancyGuard {
             wonGamesCount++;
 
             depositManager.gameDepositUserDeposit(player.playerAddress, winAmount - betAmount);
-
+            gamesCount++;
             games[gamesCount] = Game({
                 gameId: gamesCount,
                 player: playerAddress,
@@ -302,7 +304,7 @@ contract FlipCoinGame is ReentrancyGuard {
 
             depositManager.gameWithdrawUserDeposit(playerAddress, betAmount);
             depositManager.gameBurnAndStake(betAmount);
-            
+            gamesCount++;
             games[gamesCount] = Game({
                 gameId: gamesCount,
                 player: playerAddress,

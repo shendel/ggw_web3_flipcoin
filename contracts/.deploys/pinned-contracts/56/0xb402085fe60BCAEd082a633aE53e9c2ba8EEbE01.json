@@ -104,6 +104,11 @@
               "type": "uint256"
             },
             {
+              "internalType": "uint256",
+              "name": "gasPercent",
+              "type": "uint256"
+            },
+            {
               "internalType": "string",
               "name": "description",
               "type": "string"
@@ -138,5 +143,5 @@
     }
   ],
   "filePath": "electron/FlipCoinGamePFS.sol",
-  "pinnedAt": 1764334648308
+  "pinnedAt": 1764350899913
 }

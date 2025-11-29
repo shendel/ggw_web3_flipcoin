@@ -1,6 +1,6 @@
 {
   "name": "FlipCoinGame",
-  "address": "0xe58e1675514d33b7bb8db311cfef55107be71774",
+  "address": "0x091fedbe6dff05941efe4173fbb35a0c50723758",
   "abi": [
     {
       "inputs": [
@@ -999,5 +999,5 @@
     }
   ],
   "filePath": "electron/FlipCoinGamePFS.sol",
-  "pinnedAt": 1764338865953
+  "pinnedAt": 1764350932815
 }

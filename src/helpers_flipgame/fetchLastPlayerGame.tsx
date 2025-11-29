@@ -8,7 +8,7 @@ import { callMulticall } from '@/helpers/callMulticall'
 import Web3ObjectToArray from "@/helpers/Web3ObjectToArray"
 import { fromWei } from '@/helpers/wei'
 
-const fetchPlayerInfo = (options) => {
+const fetchLastPlayerGame = (options) => {
   const {
     playerAddress,
     address,
@@ -28,42 +28,23 @@ const fetchPlayerInfo = (options) => {
       target: address,
       encoder: abiI,
       calls: {
-        playerDeposit: {
-          func: 'players', args: [ playerAddress ]
-        },
-        lastGameInfo: {
+        gameInfo: {
           func: 'getLastPlayerGame', args: [ playerAddress ]
-        },
-        tokenAddress: {
-          func: 'token'
-        },
-        tokenInfo: {
-          func: 'getTokenInfo', args: [ playerAddress ]
-        },
-        gameBank: {
-          func: 'gameBank'
-        },
-        playerBalance: {
-          func: 'getDepositOf', args: [ playerAddress ]
         },
       }
     }).then((mcAnswer) => {
-    console.log('>>> fetchPlayerInfo', mcAnswer)
-      const { playerDeposit, playerBalance } = mcAnswer
-      playerDeposit.balance = playerBalance
       resolve({
         chainId,
         address,
         playerAddress,
         ...mcAnswer,
-        playerDeposit
       })
 
     }).catch((err) => {
-      console.log('>>> Fail fetch all info', err)
+      console.log('>>> Fail fetch player games', err)
       reject(err)
     })
   })
 }
 
-export default fetchPlayerInfo
+export default fetchLastPlayerGame

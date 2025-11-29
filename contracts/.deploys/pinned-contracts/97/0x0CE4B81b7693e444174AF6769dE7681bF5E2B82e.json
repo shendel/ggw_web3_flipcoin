@@ -1,12 +1,12 @@
 {
   "name": "IGGWDeposit",
-  "address": "0xA787a3f3eD3638B8B7712098Bf49F1C0583148a0",
+  "address": "0x0CE4B81b7693e444174AF6769dE7681bF5E2B82e",
   "abi": [
     {
       "inputs": [
         {
           "internalType": "uint256",
-          "name": "amount",
+          "name": "fromAmount",
           "type": "uint256"
         }
       ],
@@ -69,6 +69,16 @@
               "type": "uint256"
             },
             {
+              "internalType": "string",
+              "name": "gameCode",
+              "type": "string"
+            },
+            {
+              "internalType": "bytes32",
+              "name": "gameCodeHash",
+              "type": "bytes32"
+            },
+            {
               "internalType": "address",
               "name": "gameAddress",
               "type": "address"
@@ -81,6 +91,21 @@
             {
               "internalType": "uint256",
               "name": "pendingBankAmount",
+              "type": "uint256"
+            },
+            {
+              "internalType": "uint256",
+              "name": "burnPercent",
+              "type": "uint256"
+            },
+            {
+              "internalType": "uint256",
+              "name": "stakePercent",
+              "type": "uint256"
+            },
+            {
+              "internalType": "uint256",
+              "name": "gasPercent",
               "type": "uint256"
             },
             {
@@ -117,6 +142,6 @@
       "type": "function"
     }
   ],
-  "filePath": "electron/FlipCoinGameD.sol",
-  "pinnedAt": 1761983139823
+  "filePath": "electron/FlipCoinGamePFS.sol",
+  "pinnedAt": 1764422168763
 }
