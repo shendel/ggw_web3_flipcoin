@@ -47,12 +47,6 @@ const GameInfoModal = (props) => {
           className={inputClass} />
       </div>
       <div>
-        <span>Random Request ID:</span>
-        <input type="text"
-          value={gameInfo.requestId} readOnly={true}
-          className={inputClass} />
-      </div>
-      <div>
         <span>Random Hash:</span>
         <input type="text"
           value={gameInfo.hash} readOnly={true}
